@@ -31,7 +31,6 @@ COMBO_TEXT_COLOR_1 = (255, 255, 100)
 COMBO_TEXT_COLOR_2 = (255, 100, 255)
 PARTICLE_COLOR = (255, 255, 255)
 
-
 # Fonts
 TITLE_FONT_SIZE = 72
 LARGE_FONT_SIZE = 54
@@ -40,7 +39,7 @@ FONT_NAME = "Arial"
 
 # Game variables
 INITIAL_LIVES = 3
-INITIAL_SCORE = 1000
+INITIAL_SCORE = 0
 NOTE_SPEED = 5
 NOTE_INTERVAL = 0.8  # seconds between notes
 HIT_ZONE_Y = HEIGHT - 200
@@ -70,16 +69,6 @@ FEVER_MODE_THRESHOLD = 20
 BOSS_STAGE_LEVEL = 15
 ANIMATION_DURATION = 0.4
 
-# Note types
-NOTE_TYPE_NORMAL = 'normal'
-NOTE_TYPE_LONG = 'larga'
-
-# Note probabilities
-NOTE_PROBABILITIES = {'normal': 75, 'larga': 25}
-
-# Long note duration range
-LONG_NOTE_DURATION_RANGE = (150, 300)
-
 # Difficulty scaling
 DIFFICULTY_INCREASE_INTERVAL = 15  # seconds
 MAX_LEVEL = 10
@@ -92,9 +81,17 @@ WRONG_HIT_PENALTY = 10
 
 # Rewards
 HIT_REWARD = 20
-LONG_NOTE_REWARD = 50
 
 # Particle settings
 PARTICLE_COUNT = 20
 PARTICLE_SPEED = 5
 PARTICLE_LIFESPAN = 0.5
+
+# Input evaluation
+EVALUATION_CATEGORIES = {
+    "godness": {"window": 10, "score": 100},
+    "perfect": {"window": 20, "score": 80},
+    "good": {"window": 30, "score": 50},
+    "ok": {"window": 40, "score": 20},
+    "bad": {"window": 50, "score": 10},
+}

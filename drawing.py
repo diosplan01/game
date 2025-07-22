@@ -34,39 +34,31 @@ def draw_button(win, x, y, ancho, alto, color, presionado, columna):
     icono = text_cache.get_text(cfg.BUTTON_ICONS[columna], fuente_grande, cfg.BUTTON_ICON_COLOR)
     win.blit(icono, (x + ancho//2 - icono.get_width()//2, y + alto//2 - icono.get_height()//2))
 
-def draw_note_normal(win, x, y, color, alpha=255):
+def draw_note(win, x, y, color, alpha=255):
     temp_surf = pygame.Surface((cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), pygame.SRCALPHA)
     pygame.draw.rect(temp_surf, (*color, alpha), (0, 0, cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), border_radius=10)
     pygame.draw.rect(temp_surf, (255, 255, 255, alpha), (0, 0, cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), 2, border_radius=10)
     pygame.draw.circle(temp_surf, (255, 255, 255, alpha//2), (100, 15), 10)
     win.blit(temp_surf, (x, y))
 
-def draw_note_larga(win, x, y, altura, color, holding, progreso=0.0):
-    y_inicio = max(0, int(y + altura * progreso))
-    y_fin = min(int(y + altura), cfg.HEIGHT)
+def draw_hit_evaluation(win, evaluation):
+    if evaluation:
+        color = (255, 255, 255)
+        if evaluation == "godness":
+            color = (0, 255, 255)
+        elif evaluation == "perfect":
+            color = (0, 255, 0)
+        elif evaluation == "good":
+            color = (255, 255, 0)
+        elif evaluation == "ok":
+            color = (255, 165, 0)
+        elif evaluation == "bad":
+            color = (255, 0, 0)
+        elif evaluation == "miss":
+            color = (128, 128, 128)
 
-    if y_fin <= y_inicio:
-        return
-
-    # Draw the main body of the long note
-    for i in range(y_inicio, y_fin):
-        rel_pos = i - y
-        alpha = max(0, 255 - int((rel_pos / altura) * 155))
-        color_actual = (*color, alpha)
-        pygame.draw.rect(win, color_actual, (x, i, 100, 1))
-
-    # Draw the head of the long note
-    if y_inicio < cfg.HEIGHT:
-        head_color = color
-        if holding:
-            head_color = (min(color[0] + 100, 255), min(color[1] + 100, 255), min(color[2] + 100, 255))
-        pygame.draw.rect(win, head_color, (x - 10, y_inicio - 15, 120, 15), border_radius=7)
-        pygame.draw.rect(win, (255, 255, 255), (x - 10, y_inicio - 15, 120, 15), 2, border_radius=7)
-
-    # Draw the tail of the long note
-    if y + altura < cfg.HEIGHT + 30:
-        pygame.draw.rect(win, color, (x - 10, y + altura - 15, 120, 15), border_radius=7)
-        pygame.draw.rect(win, (255, 255, 255), (x - 10, y + altura - 15, 120, 15), 2, border_radius=7)
+        text = text_cache.get_text(evaluation.upper(), fuente_grande, color)
+        win.blit(text, (cfg.WIDTH//2 - text.get_width()//2, cfg.HEIGHT//2))
 
 def draw_game(win, game, teclas, glow_surface):
     win.fill(cfg.BACKGROUND_COLOR)
@@ -92,10 +84,7 @@ def draw_game(win, game, teclas, glow_surface):
     for nota in game.notas:
         if nota.activa:
             x = nota.columna * cfg.COLUMN_WIDTH + (cfg.COLUMN_WIDTH - 120) // 2
-            if nota.tipo == 'normal':
-                draw_note_normal(win, x, nota.y, nota.color, nota.alpha)
-            else:
-                draw_note_larga(win, x, nota.y, nota.duracion, nota.color, nota.holding, nota.progreso)
+            draw_note(win, x, nota.y, nota.color, nota.alpha)
 
     pygame.draw.line(win, cfg.HIT_ZONE_COLOR, (0, cfg.HIT_ZONE_Y), (cfg.WIDTH, cfg.HIT_ZONE_Y), 3)
     for i in range(3):
@@ -143,6 +132,9 @@ def draw_game(win, game, teclas, glow_surface):
 
     instrucciones = text_cache.get_text(cfg.INSTRUCTIONS_TEXT, fuente, cfg.INSTRUCTIONS_COLOR)
     win.blit(instrucciones, (cfg.WIDTH//2 - instrucciones.get_width()//2, cfg.HEIGHT - 30))
+
+    if game.last_hit_evaluation:
+        draw_hit_evaluation(win, game.last_hit_evaluation)
 
     if game.combo > cfg.FEVER_MODE_THRESHOLD:
         pulse = abs(math.sin(time.time() * 5)) * 100
