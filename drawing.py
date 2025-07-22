@@ -21,8 +21,9 @@ class TextCache:
         return self.cache[(text, font, color)]
 
     def get_dynamic_text(self, key, generator):
-        if key not in self.dynamic_cache or self.dynamic_cache[key][0] != generator():
-            self.dynamic_cache[key] = (generator(), generator)
+        value = generator()
+        if key not in self.dynamic_cache or self.dynamic_cache[key][0] != value:
+            self.dynamic_cache[key] = (value, generator())
         return self.dynamic_cache[key][1]
 
 text_cache = TextCache()
@@ -135,15 +136,18 @@ def draw_game(win, game, teclas, glow_surface):
     titulo = text_cache.get_text(cfg.GAME_TITLE, titulo_font, cfg.TITLE_COLOR)
     win.blit(titulo, (cfg.WIDTH//2 - titulo.get_width()//2, 20))
 
-    score_text_surface = text_cache.get_dynamic_text('score', lambda: fuente.render(f"Puntaje: {game.puntaje}", True, cfg.SCORE_TEXT_COLOR))
+    score_text_surface = text_cache.get_dynamic_text('score', lambda: f"Puntaje: {game.puntaje}")
+    score_text_surface = fuente.render(score_text_surface, True, cfg.SCORE_TEXT_COLOR)
     win.blit(score_text_surface, (cfg.SCORE_X_OFFSET, 100))
 
-    level_text_surface = text_cache.get_dynamic_text('level', lambda: fuente.render(f"Nivel: {game.nivel}", True, cfg.LEVEL_TEXT_COLOR))
+    level_text_surface = text_cache.get_dynamic_text('level', lambda: f"Nivel: {game.nivel}")
+    level_text_surface = fuente.render(level_text_surface, True, cfg.LEVEL_TEXT_COLOR)
     win.blit(level_text_surface, (cfg.WIDTH - cfg.LEVEL_X_OFFSET, 100))
 
     if game.combo > 0:
         combo_color = cfg.COMBO_TEXT_COLOR_1 if game.combo < cfg.COMBO_FEVER_THRESHOLD else cfg.COMBO_TEXT_COLOR_2
-        combo_text_surface = text_cache.get_dynamic_text('combo', lambda: fuente_grande.render(f"{game.combo}x COMBO!", True, combo_color))
+        combo_text_surface = text_cache.get_dynamic_text('combo', lambda: f"{game.combo}x COMBO!")
+        combo_text_surface = fuente_grande.render(combo_text_surface, True, combo_color)
         win.blit(combo_text_surface, (cfg.WIDTH//2 - combo_text_surface.get_width()//2, 100))
 
     vida_text = text_cache.get_text(cfg.LIFE_TEXT, fuente, cfg.LIFE_COLOR)
@@ -171,10 +175,12 @@ def draw_game(win, game, teclas, glow_surface):
         fin_text = text_cache.get_text(cfg.GAME_OVER_MESSAGE, titulo_font, cfg.GAME_OVER_TEXT_COLOR)
         win.blit(fin_text, (cfg.WIDTH//2 - fin_text.get_width()//2, cfg.HEIGHT//2 - cfg.GAME_OVER_Y_OFFSET))
 
-        puntaje_final = text_cache.get_dynamic_text('final_score', lambda: fuente_grande.render(f"Puntaje final: {game.puntaje}", True, cfg.FINAL_SCORE_COLOR))
+        puntaje_final = text_cache.get_dynamic_text('final_score', lambda: f"Puntaje final: {game.puntaje}")
+        puntaje_final = fuente_grande.render(puntaje_final, True, cfg.FINAL_SCORE_COLOR)
         win.blit(puntaje_final, (cfg.WIDTH//2 - puntaje_final.get_width()//2, cfg.HEIGHT//2 + cfg.FINAL_SCORE_Y_OFFSET))
 
-        max_combo_text = text_cache.get_dynamic_text('max_combo', lambda: fuente_grande.render(f"Combo máximo: {game.max_combo}x", True, cfg.MAX_COMBO_COLOR))
+        max_combo_text = text_cache.get_dynamic_text('max_combo', lambda: f"Combo máximo: {game.max_combo}x")
+        max_combo_text = fuente_grande.render(max_combo_text, True, cfg.MAX_COMBO_COLOR)
         win.blit(max_combo_text, (cfg.WIDTH//2 - max_combo_text.get_width()//2, cfg.HEIGHT//2 + cfg.MAX_COMBO_Y_OFFSET))
 
         reiniciar_text = text_cache.get_text(cfg.RESTART_MESSAGE, fuente, cfg.RESTART_TEXT_COLOR)
