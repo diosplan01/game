@@ -10,6 +10,7 @@ class Note:
         self.velocidad = NOTE_SPEED
         self.activa = True
         self.golpeada = False
+        self.holding = False
         self.duracion = duracion if tipo == NOTE_TYPE_LONG else 0
         self.progreso = 0  # For long notes
         self.color = COLORES[columna]
@@ -20,8 +21,22 @@ class Note:
     def move(self, dt):
         self.y += self.velocidad * dt * 60
 
-    def update(self, dt):
+    def update(self, dt, holding_key):
         self.move(dt)
+
+        if self.tipo == NOTE_TYPE_LONG:
+            if self.is_hittable() and holding_key and not self.holding:
+                self.holding = True
+
+            if self.holding:
+                self.progreso += dt / (self.duracion / 1000.0)
+                if self.progreso >= 1.0:
+                    self.progreso = 1.0
+                    self.larga_completada = True
+                    self.activa = False
+                if not holding_key:
+                    self.activa = False # Missed the long note
+
         if self.y > HIT_ZONE_Y + 100:
             self.alpha = max(0, self.alpha - 5)
             if self.alpha <= 0:
