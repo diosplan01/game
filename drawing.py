@@ -41,24 +41,29 @@ def draw_note_normal(win, x, y, color, alpha=255):
     pygame.draw.circle(temp_surf, (255, 255, 255, alpha//2), (100, 15), 10)
     win.blit(temp_surf, (x, y))
 
-def draw_note_larga(win, x, y, altura, color, progreso=0.0):
-    restante = altura * (1.0 - progreso)
+def draw_note_larga(win, x, y, altura, color, holding, progreso=0.0):
     y_inicio = max(0, int(y + altura * progreso))
     y_fin = min(int(y + altura), cfg.HEIGHT)
 
     if y_fin <= y_inicio:
         return
 
+    # Draw the main body of the long note
     for i in range(y_inicio, y_fin):
         rel_pos = i - y
         alpha = max(0, 255 - int((rel_pos / altura) * 155))
         color_actual = (*color, alpha)
         pygame.draw.rect(win, color_actual, (x, i, 100, 1))
 
+    # Draw the head of the long note
     if y_inicio < cfg.HEIGHT:
-        pygame.draw.rect(win, color, (x - 10, y_inicio - 15, 120, 15), border_radius=7)
+        head_color = color
+        if holding:
+            head_color = (min(color[0] + 100, 255), min(color[1] + 100, 255), min(color[2] + 100, 255))
+        pygame.draw.rect(win, head_color, (x - 10, y_inicio - 15, 120, 15), border_radius=7)
         pygame.draw.rect(win, (255, 255, 255), (x - 10, y_inicio - 15, 120, 15), 2, border_radius=7)
 
+    # Draw the tail of the long note
     if y + altura < cfg.HEIGHT + 30:
         pygame.draw.rect(win, color, (x - 10, y + altura - 15, 120, 15), border_radius=7)
         pygame.draw.rect(win, (255, 255, 255), (x - 10, y + altura - 15, 120, 15), 2, border_radius=7)
@@ -90,7 +95,7 @@ def draw_game(win, game, teclas, glow_surface):
             if nota.tipo == 'normal':
                 draw_note_normal(win, x, nota.y, nota.color, nota.alpha)
             else:
-                draw_note_larga(win, x, nota.y, nota.duracion, nota.color, nota.progreso)
+                draw_note_larga(win, x, nota.y, nota.duracion, nota.color, nota.holding, nota.progreso)
 
     pygame.draw.line(win, cfg.HIT_ZONE_COLOR, (0, cfg.HIT_ZONE_Y), (cfg.WIDTH, cfg.HIT_ZONE_Y), 3)
     for i in range(3):
