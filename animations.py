@@ -110,3 +110,22 @@ class ParticleEffect(Animation):
         for p in self.particles:
             alpha = max(0, 255 - 255 * (p.age / p.lifespan))
             pygame.draw.circle(surface, (*PARTICLE_COLOR, int(alpha)), (int(p.x), int(p.y)), 2)
+
+class Miss(Animation):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.duration = ANIMATION_DURATION
+        self.color = (255, 0, 0)
+
+    def update(self, dt):
+        self.progress += dt / self.duration
+        if self.progress >= 1.0:
+            self.progress = 1.0
+            self.completed = True
+
+    def draw(self, surface):
+        alpha = max(0, 255 - 255 * self.progress)
+        if alpha > 0:
+            font = pygame.font.SysFont(FONT_NAME, LARGE_FONT_SIZE, bold=True)
+            text = font.render("MISS", True, (*self.color, int(alpha)))
+            surface.blit(text, (self.x - text.get_width() // 2, self.y - text.get_height() // 2))

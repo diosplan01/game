@@ -3,7 +3,7 @@ import time
 import random
 from config import *
 from note import Note
-from animations import Explosion, Wave, ParticleEffect
+from animations import Explosion, Wave, ParticleEffect, Miss
 
 class Game:
     """
@@ -92,7 +92,7 @@ class Game:
 
         for nota in self.notas[:]:
             nota.velocidad = velocidad_base
-            nota.update(dt)
+            nota.update(dt, key_presses)
 
             if not nota.activa:
                 self.notas.remove(nota)
@@ -102,7 +102,7 @@ class Game:
                 self.handle_hit(nota)
 
             elif nota.is_offscreen():
-                self.handle_miss()
+                self.handle_miss(nota)
                 self.notas.remove(nota)
 
         for i in key_presses:
@@ -148,7 +148,7 @@ class Game:
         if nota in self.notas:
             self.notas.remove(nota)
 
-    def handle_miss(self):
+    def handle_miss(self, nota):
         """
         Handles a missed note.
         """
@@ -156,5 +156,9 @@ class Game:
         self.puntaje -= MISS_PENALTY
         self.vidas -= 1
         self.last_hit_evaluation = "miss"
+        self.animations.append(Miss(
+            nota.columna * COLUMN_WIDTH + COLUMN_WIDTH // 2,
+            nota.y
+        ))
         if self.vidas <= 0:
             self.juego_activo = False
