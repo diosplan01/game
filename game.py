@@ -2,7 +2,7 @@ import pygame
 import time
 import random
 from config import *
-from note import Note, generate_note
+from note import Note
 from animations import Explosion, Wave
 
 class Game:
@@ -35,7 +35,21 @@ class Game:
         self.tiempo_juego = 0
         self.tiempo_inicio = time.time()
 
-    def update(self, teclas):
+    def generate_note(self):
+        columna = random.randint(0, 3)
+
+        if self.notas and self.notas[-1].tipo == NOTE_TYPE_LONG:
+            tipo = NOTE_TYPE_NORMAL
+        else:
+            tipo = random.choices([NOTE_TYPE_NORMAL, NOTE_TYPE_LONG], weights=[v for k,v in NOTE_PROBABILITIES.items()])[0]
+
+        if tipo == NOTE_TYPE_NORMAL:
+            return Note(columna)
+        else:
+            duracion = random.randint(*LONG_NOTE_DURATION_RANGE)
+            return Note(columna, NOTE_TYPE_LONG, duracion)
+
+    def update(self, teclas, dt):
         if not self.juego_activo:
             return
 
@@ -47,12 +61,12 @@ class Game:
         velocidad_base = min(12, NOTE_SPEED + self.nivel * NOTE_SPEED_INCREASE_RATE)
 
         if ahora - self.tiempo_ultima_nota > intervalo_notas:
-            self.notas.append(generate_note(self.notas))
+            self.notas.append(self.generate_note())
             self.tiempo_ultima_nota = ahora
 
         for nota in self.notas[:]:
             nota.velocidad = velocidad_base
-            nota.update()
+            nota.update(dt)
 
             if not nota.activa:
                 self.notas.remove(nota)
@@ -65,7 +79,7 @@ class Game:
                     pass
 
             if nota.tipo == NOTE_TYPE_LONG and nota.activa:
-                if nota.y < ZONA_GOLPEO_Y + 100 and teclas[nota.columna]:
+                if nota.y < HIT_ZONE_Y + 100 and teclas[nota.columna]:
                     avance = velocidad_base / nota.duracion
                     nota.progreso += avance
                     nota.progreso = min(nota.progreso, 1.0)
@@ -81,7 +95,7 @@ class Game:
             if teclas[i]:
                 nota_cercana = False
                 for nota in self.notas:
-                    if nota.columna == i and abs(nota.y - ZONA_GOLPEO_Y) < 150:
+                    if nota.columna == i and abs(nota.y - HIT_ZONE_Y) < 150:
                         nota_cercana = True
                         break
 
@@ -91,8 +105,8 @@ class Game:
                     self.ultima_penalizacion = ahora
 
         for anim in self.animations[:]:
-            anim.update()
-            if anim.completado:
+            anim.update(dt)
+            if anim.completed:
                 self.animations.remove(anim)
 
     def handle_hit(self, nota):

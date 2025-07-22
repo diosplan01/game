@@ -6,14 +6,17 @@ from game import Game
 from drawing import draw_game
 from serial_reader import SerialReader
 
-def game_logic_thread(game, serial_reader, running_event):
+def game_logic_thread(game, serial_reader, running_event, reloj):
     while running_event.is_set():
+        dt = reloj.tick(60) / 1000.0
         teclas = serial_reader.get_key_states()
-        game.update(teclas)
-        pygame.time.Clock().tick(60)
+        game.update(teclas, dt)
 
 def main():
     pygame.init()
+    win = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Peor que el tetris")
+    glow_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     reloj = pygame.time.Clock()
 
     game = Game()
@@ -23,7 +26,7 @@ def main():
     running_event = threading.Event()
     running_event.set()
 
-    logic_thread = threading.Thread(target=game_logic_thread, args=(game, serial_reader, running_event))
+    logic_thread = threading.Thread(target=game_logic_thread, args=(game, serial_reader, running_event, reloj))
     logic_thread.start()
 
     corriendo = True
@@ -39,9 +42,8 @@ def main():
                 if evento.key == pygame.K_ESCAPE:
                     corriendo = False
 
-        # The drawing needs the key states for visual feedback
         teclas = serial_reader.get_key_states()
-        draw_game(game, teclas)
+        draw_game(win, game, teclas, glow_surface)
 
     running_event.clear()
     logic_thread.join()
