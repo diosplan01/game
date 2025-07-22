@@ -68,6 +68,25 @@ def draw_note_larga(win, x, y, altura, color, holding, progreso=0.0):
         pygame.draw.rect(win, color, (x - 10, y + altura - 15, 120, 15), border_radius=7)
         pygame.draw.rect(win, (255, 255, 255), (x - 10, y + altura - 15, 120, 15), 2, border_radius=7)
 
+def draw_hit_evaluation(win, evaluation):
+    if evaluation:
+        color = (255, 255, 255)
+        if evaluation == "godness":
+            color = (0, 255, 255)
+        elif evaluation == "perfect":
+            color = (0, 255, 0)
+        elif evaluation == "good":
+            color = (255, 255, 0)
+        elif evaluation == "ok":
+            color = (255, 165, 0)
+        elif evaluation == "bad":
+            color = (255, 0, 0)
+        elif evaluation == "miss":
+            color = (128, 128, 128)
+
+        text = text_cache.get_text(evaluation.upper(), fuente_grande, color)
+        win.blit(text, (cfg.WIDTH//2 - text.get_width()//2, cfg.HEIGHT//2))
+
 def draw_game(win, game, teclas, glow_surface):
     win.fill(cfg.BACKGROUND_COLOR)
 
@@ -143,6 +162,9 @@ def draw_game(win, game, teclas, glow_surface):
 
     instrucciones = text_cache.get_text(cfg.INSTRUCTIONS_TEXT, fuente, cfg.INSTRUCTIONS_COLOR)
     win.blit(instrucciones, (cfg.WIDTH//2 - instrucciones.get_width()//2, cfg.HEIGHT - 30))
+
+    if game.last_hit_evaluation:
+        draw_hit_evaluation(win, game.last_hit_evaluation)
 
     if game.combo > cfg.FEVER_MODE_THRESHOLD:
         pulse = abs(math.sin(time.time() * 5)) * 100

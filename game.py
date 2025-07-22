@@ -6,6 +6,9 @@ from note import Note
 from animations import Explosion, Wave, ParticleEffect
 
 class Game:
+    """
+    This class manages the game state and the main game loop.
+    """
     def __init__(self):
         self.notas = []
         self.animations = []
@@ -21,8 +24,12 @@ class Game:
         self.ultima_penalizacion = 0
         self.pulsaciones_innecesarias = 0
         self.tiempo_inicio = time.time()
+        self.last_hit_evaluation = None
 
     def reiniciar_juego(self):
+        """
+        Resets the game to its initial state.
+        """
         self.notas = []
         self.animations = []
         self.vidas = INITIAL_LIVES
@@ -34,8 +41,12 @@ class Game:
         self.nivel = 1
         self.tiempo_juego = 0
         self.tiempo_inicio = time.time()
+        self.last_hit_evaluation = None
 
     def generate_note(self):
+        """
+        Generates a new note with a random column and type.
+        """
         columna = random.randint(0, 3)
 
         if self.notas and self.notas[-1].tipo == NOTE_TYPE_LONG:
@@ -49,7 +60,20 @@ class Game:
             duracion = random.randint(*LONG_NOTE_DURATION_RANGE)
             return Note(columna, NOTE_TYPE_LONG, duracion)
 
-    def update(self, teclas, dt):
+    def evaluate_hit(self, nota):
+        """
+        Evaluates the timing of a hit and returns the corresponding grade and score.
+        """
+        diff = abs(nota.y - HIT_ZONE_Y)
+        for category, values in EVALUATION_CATEGORIES.items():
+            if diff <= values["window"]:
+                return category, values["score"]
+        return "bad", 0
+
+    def update(self, key_presses, key_states, dt):
+        """
+        Updates the game state on each frame.
+        """
         if not self.juego_activo:
             return
 
@@ -66,7 +90,7 @@ class Game:
 
         for nota in self.notas[:]:
             nota.velocidad = velocidad_base
-            holding_key = teclas[nota.columna] if nota.columna < len(teclas) else False
+            holding_key = key_states[nota.columna] if nota.columna < len(key_states) else False
             nota.update(dt, holding_key)
 
             if not nota.activa:
@@ -75,7 +99,7 @@ class Game:
                 self.notas.remove(nota)
                 continue
 
-            if nota.is_hittable() and nota.tipo == NOTE_TYPE_NORMAL and teclas[nota.columna]:
+            if nota.is_hittable() and nota.tipo == NOTE_TYPE_NORMAL and nota.columna in key_presses:
                 self.handle_hit(nota)
 
             if nota.larga_completada:
@@ -85,18 +109,17 @@ class Game:
                 self.handle_miss()
                 self.notas.remove(nota)
 
-        for i in range(4):
-            if teclas[i]:
-                nota_cercana = False
-                for nota in self.notas:
-                    if nota.columna == i and abs(nota.y - HIT_ZONE_Y) < 150:
-                        nota_cercana = True
-                        break
+        for i in key_presses:
+            nota_cercana = False
+            for nota in self.notas:
+                if nota.columna == i and abs(nota.y - HIT_ZONE_Y) < 150:
+                    nota_cercana = True
+                    break
 
-                if not nota_cercana and ahora - self.ultima_penalizacion > 0.1:
-                    self.puntaje -= WRONG_HIT_PENALTY
-                    self.pulsaciones_innecesarias += 1
-                    self.ultima_penalizacion = ahora
+            if not nota_cercana and ahora - self.ultima_penalizacion > 0.1:
+                self.puntaje -= WRONG_HIT_PENALTY
+                self.pulsaciones_innecesarias += 1
+                self.ultima_penalizacion = ahora
 
         for anim in self.animations[:]:
             anim.update(dt)
@@ -104,11 +127,17 @@ class Game:
                 self.animations.remove(anim)
 
     def handle_hit(self, nota):
+        """
+        Handles a successful hit.
+        """
         nota.activa = False
         self.combo += 1
         self.max_combo = max(self.max_combo, self.combo)
         self.fallos_seguidos = 0
-        self.puntaje += HIT_REWARD * self.combo
+
+        evaluation, score = self.evaluate_hit(nota)
+        self.puntaje += score * self.combo
+        self.last_hit_evaluation = evaluation
 
         self.animations.append(Explosion(
             nota.columna * COLUMN_WIDTH + COLUMN_WIDTH // 2,
@@ -124,6 +153,9 @@ class Game:
             self.notas.remove(nota)
 
     def handle_long_note_completion(self, nota):
+        """
+        Handles the completion of a long note.
+        """
         self.puntaje += LONG_NOTE_REWARD
         self.animations.append(Wave(
             nota.columna * COLUMN_WIDTH + COLUMN_WIDTH // 2,
@@ -135,8 +167,12 @@ class Game:
 
 
     def handle_miss(self):
+        """
+        Handles a missed note.
+        """
         self.combo = 0
         self.puntaje -= MISS_PENALTY
         self.vidas -= 1
+        self.last_hit_evaluation = "miss"
         if self.vidas <= 0:
             self.juego_activo = False
