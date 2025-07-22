@@ -1,5 +1,6 @@
 import time
-from config import COLORES, HIT_ZONE_Y, NOTE_SPEED
+import random
+from config import COLORES, NOTE_TYPE_NORMAL, HIT_ZONE_Y, NOTE_SPEED
 
 class Note:
     def __init__(self, columna):

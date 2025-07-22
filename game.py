@@ -25,6 +25,15 @@ class Game:
         self.pulsaciones_innecesarias = 0
         self.tiempo_inicio = time.time()
         self.last_hit_evaluation = None
+        self.pattern_index = 0
+        self.patterns = [
+            [0, 1, 2, 3],
+            [0, 2, 1, 3],
+            [3, 2, 1, 0],
+            [0, 1, 0, 1],
+            [2, 3, 2, 3],
+            [0, 3, 1, 2],
+        ]
 
     def reiniciar_juego(self):
         """
@@ -42,12 +51,15 @@ class Game:
         self.tiempo_juego = 0
         self.tiempo_inicio = time.time()
         self.last_hit_evaluation = None
+        self.pattern_index = 0
 
     def generate_note(self):
         """
         Generates a new note with a random column.
         """
-        columna = random.randint(0, 3)
+        pattern = random.choice(self.patterns)
+        columna = pattern[self.pattern_index % len(pattern)]
+        self.pattern_index += 1
         return Note(columna)
 
     def evaluate_hit(self, nota):
