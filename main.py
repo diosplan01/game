@@ -10,8 +10,7 @@ def game_logic_thread(game, serial_reader, running_event, reloj):
     while running_event.is_set():
         dt = reloj.tick(60) / 1000.0
         key_presses = serial_reader.get_key_presses()
-        key_states = serial_reader.get_key_states()
-        game.update(key_presses, key_states, dt)
+        game.update(key_presses, dt)
 
 def main():
     pygame.init()
