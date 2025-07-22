@@ -69,16 +69,6 @@ FEVER_MODE_THRESHOLD = 20
 BOSS_STAGE_LEVEL = 15
 ANIMATION_DURATION = 0.4
 
-# Note types
-NOTE_TYPE_NORMAL = 'normal'
-NOTE_TYPE_LONG = 'larga'
-
-# Note probabilities
-NOTE_PROBABILITIES = {'normal': 75, 'larga': 25}
-
-# Long note duration range
-LONG_NOTE_DURATION_RANGE = (150, 300)
-
 # Difficulty scaling
 DIFFICULTY_INCREASE_INTERVAL = 15  # seconds
 MAX_LEVEL = 10
@@ -91,7 +81,6 @@ WRONG_HIT_PENALTY = 10
 
 # Rewards
 HIT_REWARD = 20
-LONG_NOTE_REWARD = 50
 
 # Particle settings
 PARTICLE_COUNT = 20

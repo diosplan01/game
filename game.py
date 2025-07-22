@@ -45,20 +45,10 @@ class Game:
 
     def generate_note(self):
         """
-        Generates a new note with a random column and type.
+        Generates a new note with a random column.
         """
         columna = random.randint(0, 3)
-
-        if self.notas and self.notas[-1].tipo == NOTE_TYPE_LONG:
-            tipo = NOTE_TYPE_NORMAL
-        else:
-            tipo = random.choices([NOTE_TYPE_NORMAL, NOTE_TYPE_LONG], weights=[v for k,v in NOTE_PROBABILITIES.items()])[0]
-
-        if tipo == NOTE_TYPE_NORMAL:
-            return Note(columna)
-        else:
-            duracion = random.randint(*LONG_NOTE_DURATION_RANGE)
-            return Note(columna, NOTE_TYPE_LONG, duracion)
+        return Note(columna)
 
     def evaluate_hit(self, nota):
         """
@@ -70,7 +60,7 @@ class Game:
                 return category, values["score"]
         return "bad", 0
 
-    def update(self, key_presses, key_states, dt):
+    def update(self, key_presses, dt):
         """
         Updates the game state on each frame.
         """
@@ -90,20 +80,14 @@ class Game:
 
         for nota in self.notas[:]:
             nota.velocidad = velocidad_base
-            holding_key = key_states[nota.columna] if nota.columna < len(key_states) else False
-            nota.update(dt, holding_key)
+            nota.update(dt)
 
             if not nota.activa:
-                if not nota.larga_completada and nota.tipo == NOTE_TYPE_LONG:
-                    self.handle_miss()
                 self.notas.remove(nota)
                 continue
 
-            if nota.is_hittable() and nota.tipo == NOTE_TYPE_NORMAL and nota.columna in key_presses:
+            if nota.is_hittable() and nota.columna in key_presses:
                 self.handle_hit(nota)
-
-            if nota.larga_completada:
-                self.handle_long_note_completion(nota)
 
             elif nota.is_offscreen():
                 self.handle_miss()
@@ -151,20 +135,6 @@ class Game:
 
         if nota in self.notas:
             self.notas.remove(nota)
-
-    def handle_long_note_completion(self, nota):
-        """
-        Handles the completion of a long note.
-        """
-        self.puntaje += LONG_NOTE_REWARD
-        self.animations.append(Wave(
-            nota.columna * COLUMN_WIDTH + COLUMN_WIDTH // 2,
-            nota.y + nota.duracion,
-            (255, 255, 255)
-        ))
-        if nota in self.notas:
-            self.notas.remove(nota)
-
 
     def handle_miss(self):
         """
