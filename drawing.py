@@ -13,13 +13,54 @@ fuente = pygame.font.SysFont(cfg.FONT_NAME, cfg.DEFAULT_FONT_SIZE)
 class TextCache:
     def __init__(self):
         self.cache = {}
+        self.dynamic_cache = {}
 
     def get_text(self, text, font, color):
         if (text, font, color) not in self.cache:
             self.cache[(text, font, color)] = font.render(text, True, color)
         return self.cache[(text, font, color)]
 
+    def get_dynamic_text(self, key, generator):
+        if key not in self.dynamic_cache or self.dynamic_cache[key][0] != generator():
+            self.dynamic_cache[key] = (generator(), generator)
+        return self.dynamic_cache[key][1]
+
 text_cache = TextCache()
+
+class NoteRenderer:
+    def __init__(self):
+        self.note_surfaces = {}
+
+    def get_note_surface(self, color):
+        if color not in self.note_surfaces:
+            temp_surf = pygame.Surface((cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), pygame.SRCALPHA)
+            pygame.draw.rect(temp_surf, color, (0, 0, cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), border_radius=cfg.NOTE_BORDER_RADIUS)
+            pygame.draw.rect(temp_surf, (255, 255, 255), (0, 0, cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), cfg.NOTE_BORDER_WIDTH, border_radius=cfg.NOTE_BORDER_RADIUS)
+            pygame.draw.circle(temp_surf, (255, 255, 255, 128), (100, 15), cfg.NOTE_CIRCLE_RADIUS)
+            self.note_surfaces[color] = temp_surf
+        return self.note_surfaces[color]
+
+note_renderer = NoteRenderer()
+
+class GlowEffect:
+    def __init__(self):
+        self.glow_surfaces = {}
+
+    def get_glow_surface(self, color):
+        if color not in self.glow_surfaces:
+            temp_surf = pygame.Surface((cfg.NOTE_HIT_GLOW_RADIUS * 2, cfg.NOTE_HIT_GLOW_RADIUS * 2), pygame.SRCALPHA)
+            for r in range(cfg.NOTE_HIT_GLOW_RADIUS, 0, -5):
+                alpha = cfg.NOTE_HIT_GLOW_ALPHA - r * 4
+                gfxdraw.filled_circle(
+                    temp_surf,
+                    cfg.NOTE_HIT_GLOW_RADIUS,
+                    cfg.NOTE_HIT_GLOW_RADIUS,
+                    r,
+                    (*color, max(0, alpha)))
+            self.glow_surfaces[color] = temp_surf
+        return self.glow_surfaces[color]
+
+glow_effect = GlowEffect()
 
 def draw_button(win, x, y, ancho, alto, color, presionado, columna):
     if presionado:
@@ -35,11 +76,9 @@ def draw_button(win, x, y, ancho, alto, color, presionado, columna):
     win.blit(icono, (x + ancho//2 - icono.get_width()//2, y + alto//2 - icono.get_height()//2))
 
 def draw_note(win, x, y, color, alpha=255):
-    temp_surf = pygame.Surface((cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), pygame.SRCALPHA)
-    pygame.draw.rect(temp_surf, (*color, alpha), (0, 0, cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), border_radius=cfg.NOTE_BORDER_RADIUS)
-    pygame.draw.rect(temp_surf, (255, 255, 255, alpha), (0, 0, cfg.NOTE_WIDTH, cfg.NOTE_HEIGHT), cfg.NOTE_BORDER_WIDTH, border_radius=cfg.NOTE_BORDER_RADIUS)
-    pygame.draw.circle(temp_surf, (255, 255, 255, alpha//2), (100, 15), cfg.NOTE_CIRCLE_RADIUS)
-    win.blit(temp_surf, (x, y))
+    note_surface = note_renderer.get_note_surface(color)
+    note_surface.set_alpha(alpha)
+    win.blit(note_surface, (x, y))
 
 def draw_hit_evaluation(win, evaluation):
     if evaluation:
@@ -55,14 +94,9 @@ def draw_game(win, game, teclas, glow_surface):
         if teclas[i]:
             center_x = i * cfg.COLUMN_WIDTH + cfg.COLUMN_WIDTH // 2
             center_y = cfg.HIT_ZONE_Y - 50
-            for r in range(cfg.NOTE_HIT_GLOW_RADIUS, 0, -5):
-                alpha = cfg.NOTE_HIT_GLOW_ALPHA - r * 4
-                gfxdraw.filled_circle(
-                    glow_surface,
-                    center_x,
-                    center_y,
-                    r,
-                    (*cfg.COLORES[i], max(0, alpha)))
+            glow_surf = glow_effect.get_glow_surface(cfg.COLORES[i])
+            win.blit(glow_surf, (center_x - cfg.NOTE_HIT_GLOW_RADIUS, center_y - cfg.NOTE_HIT_GLOW_RADIUS))
+
     win.blit(glow_surface, (0, 0))
 
     for i in range(1, 4):
@@ -101,16 +135,16 @@ def draw_game(win, game, teclas, glow_surface):
     titulo = text_cache.get_text(cfg.GAME_TITLE, titulo_font, cfg.TITLE_COLOR)
     win.blit(titulo, (cfg.WIDTH//2 - titulo.get_width()//2, 20))
 
-    texto_puntaje = text_cache.get_text(f"Puntaje: {game.puntaje}", fuente, cfg.SCORE_TEXT_COLOR)
-    win.blit(texto_puntaje, (cfg.SCORE_X_OFFSET, 100))
+    score_text_surface = text_cache.get_dynamic_text('score', lambda: fuente.render(f"Puntaje: {game.puntaje}", True, cfg.SCORE_TEXT_COLOR))
+    win.blit(score_text_surface, (cfg.SCORE_X_OFFSET, 100))
 
-    texto_nivel = text_cache.get_text(f"Nivel: {game.nivel}", fuente, cfg.LEVEL_TEXT_COLOR)
-    win.blit(texto_nivel, (cfg.WIDTH - cfg.LEVEL_X_OFFSET, 100))
+    level_text_surface = text_cache.get_dynamic_text('level', lambda: fuente.render(f"Nivel: {game.nivel}", True, cfg.LEVEL_TEXT_COLOR))
+    win.blit(level_text_surface, (cfg.WIDTH - cfg.LEVEL_X_OFFSET, 100))
 
     if game.combo > 0:
         combo_color = cfg.COMBO_TEXT_COLOR_1 if game.combo < cfg.COMBO_FEVER_THRESHOLD else cfg.COMBO_TEXT_COLOR_2
-        combo_text = text_cache.get_text(f"{game.combo}x COMBO!", fuente_grande, combo_color)
-        win.blit(combo_text, (cfg.WIDTH//2 - combo_text.get_width()//2, 100))
+        combo_text_surface = text_cache.get_dynamic_text('combo', lambda: fuente_grande.render(f"{game.combo}x COMBO!", True, combo_color))
+        win.blit(combo_text_surface, (cfg.WIDTH//2 - combo_text_surface.get_width()//2, 100))
 
     vida_text = text_cache.get_text(cfg.LIFE_TEXT, fuente, cfg.LIFE_COLOR)
     win.blit(vida_text, (cfg.WIDTH - cfg.LIFE_X_OFFSET, 100))
@@ -137,10 +171,10 @@ def draw_game(win, game, teclas, glow_surface):
         fin_text = text_cache.get_text(cfg.GAME_OVER_MESSAGE, titulo_font, cfg.GAME_OVER_TEXT_COLOR)
         win.blit(fin_text, (cfg.WIDTH//2 - fin_text.get_width()//2, cfg.HEIGHT//2 - cfg.GAME_OVER_Y_OFFSET))
 
-        puntaje_final = text_cache.get_text(f"Puntaje final: {game.puntaje}", fuente_grande, cfg.FINAL_SCORE_COLOR)
+        puntaje_final = text_cache.get_dynamic_text('final_score', lambda: fuente_grande.render(f"Puntaje final: {game.puntaje}", True, cfg.FINAL_SCORE_COLOR))
         win.blit(puntaje_final, (cfg.WIDTH//2 - puntaje_final.get_width()//2, cfg.HEIGHT//2 + cfg.FINAL_SCORE_Y_OFFSET))
 
-        max_combo_text = text_cache.get_text(f"Combo máximo: {game.max_combo}x", fuente_grande, cfg.MAX_COMBO_COLOR)
+        max_combo_text = text_cache.get_dynamic_text('max_combo', lambda: fuente_grande.render(f"Combo máximo: {game.max_combo}x", True, cfg.MAX_COMBO_COLOR))
         win.blit(max_combo_text, (cfg.WIDTH//2 - max_combo_text.get_width()//2, cfg.HEIGHT//2 + cfg.MAX_COMBO_Y_OFFSET))
 
         reiniciar_text = text_cache.get_text(cfg.RESTART_MESSAGE, fuente, cfg.RESTART_TEXT_COLOR)
